@@ -168,6 +168,7 @@ function GameControll(
     if (round === 9 && board.checkIsWin() === null) {
       ui.gameOverView(null);
     }
+    ui.renderUiELements();
     round++;
   };
 
@@ -241,15 +242,27 @@ function UiControll() {
   };
   const gameOverView = (result) => {
     const boardElement = document.getElementById("gameBoard");
+    const resultElement = document.getElementById("result-element");
+    const turnElement = document.getElementById("turn-element");
     boardElement.classList.add("lock");
     boardElement.classList.add("game-over");
-    console.log(result);
-    winningCells(result.type, result.nr);
+    if (result != null) {
+      winningCells(result.type, result.nr);
+      resultElement.innerText = `Player ${result.player} is a winer!`;
+      turnElement.innerHTML = "";
+    } else {
+      resultElement.innerText = `TIE`;
+    }
   };
-  return { renderBoard, gameOverView };
+  const renderUiELements = () => {
+    const turnElement = document.getElementById("turn-element");
+    turnElement.innerText = `${game.getActivePlayer().name} turn `;
+  };
+  return { renderBoard, gameOverView, renderUiELements };
 }
 
 const game = GameControll();
 const ui = UiControll();
 const board = Gameboard();
 ui.renderBoard(board.getBoardWithTokens());
+ui.renderUiELements();
