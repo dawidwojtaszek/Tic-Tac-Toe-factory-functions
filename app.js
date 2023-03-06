@@ -9,6 +9,15 @@ function Gameboard() {
       board[i].push(Cell());
     }
   }
+  const resetBoard = () => {
+    board = [];
+    for (let i = 0; i < rows; i++) {
+      board[i] = [];
+      for (let j = 0; j < columns; j++) {
+        board[i].push(Cell());
+      }
+    }
+  };
   const getBoard = () => board;
   const setXO = (x, y, player) => {
     board[x][y].setValue(player);
@@ -107,7 +116,14 @@ function Gameboard() {
     console.log(boardToPrint);
   };
 
-  return { getBoard, setXO, printBoard, checkIsWin, getBoardWithTokens };
+  return {
+    getBoard,
+    setXO,
+    printBoard,
+    checkIsWin,
+    getBoardWithTokens,
+    resetBoard,
+  };
 }
 
 function Cell() {
@@ -118,12 +134,42 @@ function Cell() {
   return { setValue, getValue };
 }
 
+function UiControll() {
+  const renderBoard = (boardToRender) => {
+    console.log(boardToRender);
+    const gameBoardElement = document.getElementById("gameBoard");
+    gameBoardElement.innerHTML = "";
+    boardToRender.forEach((row) => {
+      const rowElement = document.createElement("div");
+      rowElement.classList = "row";
+      row.forEach((cell) => {
+        const cellElement = document.createElement("div");
+        cellElement.classList = "cell";
+        console.log(cell);
+        if (cell != 0) {
+          const imgElement = document.createElement("img");
+          if (cell === 1) {
+            imgElement.src = "./images/x-solid.svg";
+            cellElement.appendChild(imgElement);
+          } else {
+            imgElement.src = "./images/circle-regular.svg";
+            cellElement.appendChild(imgElement);
+          }
+        }
+        rowElement.appendChild(cellElement);
+      });
+      gameBoardElement.appendChild(rowElement);
+    });
+  };
+  return { renderBoard };
+}
+
 function GameControll(
   playerOneName = "Player One",
   playerTwoName = "Player Two"
 ) {
   const board = Gameboard();
-
+  const ui = UiControll();
   const players = [
     {
       name: playerOneName,
@@ -141,6 +187,7 @@ function GameControll(
   const resetGame = () => {
     round = 1;
     activePlayer = players[0];
+    board.resetBoard();
   };
 
   const changeActivePlayer = () => {
@@ -155,13 +202,16 @@ function GameControll(
     console.log(board.getBoard());
     board.setXO(x - 1, y - 1, activePlayer);
     board.printBoard();
-    console.log(board.getBoardWithTokens());
+    ui.renderBoard(board.getBoardWithTokens(board.getBoardWithTokens()));
     changeActivePlayer();
     console.log(board.checkIsWin());
     round++;
   };
 
-  return { playRound, getRound };
+  return { playRound, getRound, resetGame, getActivePlayer };
 }
 
 const game = GameControll();
+const ui = UiControll();
+const board = Gameboard();
+ui.renderBoard(board.getBoardWithTokens());
