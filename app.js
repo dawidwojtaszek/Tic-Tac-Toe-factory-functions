@@ -1,7 +1,7 @@
 function Gameboard() {
   const rows = 3;
   const columns = 3;
-  const board = [];
+  let board = [];
 
   for (let i = 0; i < rows; i++) {
     board[i] = [];
@@ -9,15 +9,7 @@ function Gameboard() {
       board[i].push(Cell());
     }
   }
-  const resetBoard = () => {
-    board = [];
-    for (let i = 0; i < rows; i++) {
-      board[i] = [];
-      for (let j = 0; j < columns; j++) {
-        board[i].push(Cell());
-      }
-    }
-  };
+
   const getBoard = () => board;
   const setXO = (x, y, player) => {
     board[x][y].setValue(player);
@@ -53,7 +45,7 @@ function Gameboard() {
         }
       }
       if (counter === 3) {
-        winner = currentE;
+        winner = { player: currentE, type: "row", nr: i };
       } else {
         counter = 0;
       }
@@ -70,7 +62,7 @@ function Gameboard() {
         }
       }
       if (counter === 3) {
-        winner = currentE;
+        winner = { player: currentE, type: "col", nr: i };
       } else {
         counter = 0;
       }
@@ -96,12 +88,12 @@ function Gameboard() {
       }
     }
     if (diagonalCounterL === 3) {
-      winner = boardToken[0][0];
+      winner = { player: boardToken[0][0], type: "dia", nr: 1 };
     } else {
       diagonalCounterL = 0;
     }
     if (diagonalCounterR === 3) {
-      winner = boardToken[0][2];
+      winner = { player: boardToken[0][2], type: "dia", nr: 2 };
     } else {
       diagonalCounterR = 0;
     }
@@ -122,7 +114,6 @@ function Gameboard() {
     printBoard,
     checkIsWin,
     getBoardWithTokens,
-    resetBoard,
   };
 }
 
@@ -134,42 +125,11 @@ function Cell() {
   return { setValue, getValue };
 }
 
-function UiControll() {
-  const renderBoard = (boardToRender) => {
-    console.log(boardToRender);
-    const gameBoardElement = document.getElementById("gameBoard");
-    gameBoardElement.innerHTML = "";
-    boardToRender.forEach((row) => {
-      const rowElement = document.createElement("div");
-      rowElement.classList = "row";
-      row.forEach((cell) => {
-        const cellElement = document.createElement("div");
-        cellElement.classList = "cell";
-        console.log(cell);
-        if (cell != 0) {
-          const imgElement = document.createElement("img");
-          if (cell === 1) {
-            imgElement.src = "./images/x-solid.svg";
-            cellElement.appendChild(imgElement);
-          } else {
-            imgElement.src = "./images/circle-regular.svg";
-            cellElement.appendChild(imgElement);
-          }
-        }
-        rowElement.appendChild(cellElement);
-      });
-      gameBoardElement.appendChild(rowElement);
-    });
-  };
-  return { renderBoard };
-}
-
 function GameControll(
   playerOneName = "Player One",
   playerTwoName = "Player Two"
 ) {
   const board = Gameboard();
-  const ui = UiControll();
   const players = [
     {
       name: playerOneName,
@@ -185,9 +145,7 @@ function GameControll(
 
   const getActivePlayer = () => activePlayer;
   const resetGame = () => {
-    round = 1;
-    activePlayer = players[0];
-    board.resetBoard();
+    window.location.reload();
   };
 
   const changeActivePlayer = () => {
@@ -198,17 +156,97 @@ function GameControll(
   const getRound = () => round;
 
   const playRound = (x, y) => {
-    console.log("round:", getRound(), activePlayer.name);
-    console.log(board.getBoard());
     board.setXO(x - 1, y - 1, activePlayer);
-    board.printBoard();
     ui.renderBoard(board.getBoardWithTokens(board.getBoardWithTokens()));
     changeActivePlayer();
-    console.log(board.checkIsWin());
+    if (round > 4) {
+      let result = board.checkIsWin();
+      if (result != null) {
+        ui.gameOverView(result);
+      }
+    }
+    if (round === 9 && board.checkIsWin() === null) {
+      ui.gameOverView(null);
+    }
     round++;
   };
 
   return { playRound, getRound, resetGame, getActivePlayer };
+}
+
+function UiControll() {
+  const game = GameControll();
+  const renderBoard = (boardToRender) => {
+    console.log(boardToRender);
+    const gameBoardElement = document.getElementById("gameBoard");
+    gameBoardElement.innerHTML = "";
+    boardToRender.forEach((row, index) => {
+      const rowElement = document.createElement("div");
+      rowElement.classList = "row";
+      rowElement.dataset.row = index;
+
+      row.forEach((cell, index) => {
+        const cellElement = document.createElement("div");
+        cellElement.classList = "cell";
+        cellElement.dataset.col = index;
+        if (cell != 0) {
+          const imgElement = document.createElement("img");
+          if (cell === 1) {
+            imgElement.src = "./images/x-solid.svg";
+            cellElement.appendChild(imgElement);
+            cellElement.classList.add("lock");
+          } else {
+            imgElement.src = "./images/circle-regular.svg";
+            cellElement.appendChild(imgElement);
+            cellElement.classList.add("lock");
+          }
+        }
+        rowElement.appendChild(cellElement);
+      });
+      gameBoardElement.appendChild(rowElement);
+    });
+    const cellsElements = document.querySelectorAll(".cell");
+    cellsElements.forEach((e) => {
+      e.addEventListener("click", (e) => {
+        game.playRound(
+          parseInt(e.target.parentElement.dataset.row) + 1,
+          parseInt(e.target.dataset.col) + 1
+        );
+      });
+    });
+  };
+  const winningCells = (type, nr) => {
+    const line = document.querySelectorAll(`[data-${type}]`);
+    if (type !== "dia") {
+      line.forEach((element) => {
+        if (parseInt(element.dataset[`${type}`]) === nr) {
+          element.classList.add("winning-cell");
+        }
+      });
+    } else if (nr === 1) {
+      const first = document.querySelector(".cell");
+      const secound = document.querySelector('[data-row="1"] :nth-child(2)');
+      const third = document.querySelector('[data-row="2"] :nth-child(3)');
+      first.classList.add("winning-cell");
+      secound.classList.add("winning-cell");
+      third.classList.add("winning-cell");
+    } else if (nr === 2) {
+      const first = document.querySelector('[data-row="0"] :nth-child(3)');
+      const secound = document.querySelector('[data-row="1"] :nth-child(2)');
+      const third = document.querySelector('[data-row="2"] :first-child');
+      first.classList.add("winning-cell");
+      secound.classList.add("winning-cell");
+      third.classList.add("winning-cell");
+    }
+  };
+  const gameOverView = (result) => {
+    const boardElement = document.getElementById("gameBoard");
+    boardElement.classList.add("lock");
+    boardElement.classList.add("game-over");
+    console.log(result);
+    winningCells(result.type, result.nr);
+  };
+  return { renderBoard, gameOverView };
 }
 
 const game = GameControll();
